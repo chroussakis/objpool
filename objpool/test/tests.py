@@ -397,10 +397,12 @@ class TestHTTPConnectionTestCase(unittest.TestCase):
         pool = pooled._pool
         conn.request("GET", "/")
         serversock, addr = self.sock.accept()
-        serversock.send("HTTP/1.1 200 OK\n"
-                        "Content-Length: 6\n"
-                        "\n"
-                        "HELLO\n")
+        message = "HTTP/1.1 200 OK\n" \
+                  "Content-Length: 6\n"\
+                  "\n" \
+                  "HELLO\n" \
+
+        serversock.send(message.encode())
         time.sleep(0.3)
         # We would read this message like this
         #resp = conn.getresponse()
@@ -424,7 +426,7 @@ class TestHTTPConnectionTestCase(unittest.TestCase):
                     raise TestError()
             except TestError:
                 self.assertTrue(pool is not None)
-                self.assertEqual(pool._semaphore._Semaphore__value, 1)
+                self.assertEqual(pool._semaphore._value, 1)
 
 
 class ProcessSafetyTestCase(unittest.TestCase):
