@@ -3,7 +3,7 @@ objpool
 =======
 
 objpool provides a generic library for pooling resources as objects. As an
-example, it includes a pool for Hhttp.client HTTP connections, but it is generalized
+example, it includes a pool for http.client HTTP connections, but it is generalized
 and expects you to extend it to create your own pooled objects.
 
 Usage::
