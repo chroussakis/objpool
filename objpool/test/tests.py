@@ -125,7 +125,7 @@ class ObjectPoolTestCase(unittest.TestCase):
         self.assertRaises(NotImplementedError, pool._pool_create)
 
     def test_get_with_factory(self):
-        obj_generator = iter(range(10)).next
+        obj_generator = iter(list(range(10))).__next__
         pool = ObjectPool(3, create=obj_generator)
         self.assertEqual(pool.pool_get(), 0)
         self.assertEqual(pool.pool_get(), 1)
@@ -161,9 +161,9 @@ class NumbersPoolTestCase(unittest.TestCase):
     def test_seq_allocate_all(self):
         """Test allocation and deallocation of all pool objects"""
         n = []
-        for _ in xrange(0, self.N):
+        for _ in range(0, self.N):
             n.append(self.numbers.pool_get())
-        self.assertEqual(n, range(0, self.N))
+        self.assertEqual(n, list(range(0, self.N)))
         for i in n:
             self.numbers.pool_put(i)
         self.assertEqual(self.numbers._set, set(n))
@@ -177,7 +177,7 @@ class NumbersPoolTestCase(unittest.TestCase):
         results = [None] * self.N
         threads = [threading.Thread(target=allocate_one,
                                     args=(self.numbers, results, i))
-                   for i in xrange(0, self.N)]
+                   for i in range(0, self.N)]
 
         for t in threads:
             t.start()
@@ -187,11 +187,11 @@ class NumbersPoolTestCase(unittest.TestCase):
         # This nonblocking pool_get() should fail
         self.assertRaises(PoolLimitError, self.numbers.pool_get,
                           blocking=False)
-        self.assertEqual(sorted(results), range(0, self.N))
+        self.assertEqual(sorted(results), list(range(0, self.N)))
 
     def test_allocate_no_create(self):
         """Allocate objects from the pool without creating them"""
-        for i in xrange(0, self.N):
+        for i in range(0, self.N):
             self.assertIsNone(self.numbers.pool_get(create=False))
 
         # This nonblocking pool_get() should fail
@@ -201,9 +201,9 @@ class NumbersPoolTestCase(unittest.TestCase):
     def test_pool_cleanup_returns_failure(self):
         """Put a broken object, test a new one is retrieved eventually"""
         n = []
-        for _ in xrange(0, self.N):
+        for _ in range(0, self.N):
             n.append(self.numbers.pool_get())
-        self.assertEqual(n, range(0, self.N))
+        self.assertEqual(n, list(range(0, self.N)))
 
         del n[-1:]
         self.numbers.pool_put(-1)  # This is a broken object
@@ -222,7 +222,7 @@ class NumbersPoolTestCase(unittest.TestCase):
         results = [None] * nr_threads
         threads = [threading.Thread(target=allocate_one_and_sleep,
                                     args=(self.numbers, self.SEC, results, i))
-                   for i in xrange(nr_threads)]
+                   for i in range(nr_threads)]
 
         # This should take 3 * SEC seconds
         start = time.time()
@@ -248,7 +248,7 @@ class NumbersPoolTestCase(unittest.TestCase):
 
     def test_verify_create(self):
         numbers = self.numbers
-        nums = [numbers.pool_get() for _ in xrange(self.N)]
+        nums = [numbers.pool_get() for _ in range(self.N)]
         for num in nums:
             numbers.pool_put(num)
 
@@ -262,7 +262,7 @@ class NumbersPoolTestCase(unittest.TestCase):
 
     def test_verify_error(self):
         numbers = self.numbers
-        nums = [numbers.pool_get() for _ in xrange(self.N)]
+        nums = [numbers.pool_get() for _ in range(self.N)]
         for num in nums:
             numbers.pool_put(num)
 
@@ -274,7 +274,7 @@ class NumbersPoolTestCase(unittest.TestCase):
 
     def test_create_false(self):
         numpool = self.numbers
-        for _ in xrange(self.N + 1):
+        for _ in range(self.N + 1):
             none = numpool.pool_get(create=False)
             self.assertEqual(none, None)
             numpool.pool_put(None)
@@ -298,7 +298,7 @@ class ThreadSafetyTestCase(unittest.TestCase):
         N = self.size
         results = [None] * N
         threads = [threading.Thread(target=create, args=(pool, results, i))
-                   for i in xrange(N)]
+                   for i in range(N)]
         for t in threads:
             t.start()
         for t in threads:
@@ -308,7 +308,7 @@ class ThreadSafetyTestCase(unittest.TestCase):
         for r in results:
             freq[r] += 1
 
-        mults = [(n, c) for n, c in freq.items() if c > 1]
+        mults = [(n, c) for n, c in list(freq.items()) if c > 1]
         if mults:
             #print mults
             raise AssertionError("_pool_create() is not thread safe")
@@ -414,7 +414,7 @@ class TestHTTPConnectionTestCase(unittest.TestCase):
         class TestError(Exception):
             pass
 
-        for i in xrange(10):
+        for i in range(10):
             pool = None
             try:
                 with PooledHTTPConnection(

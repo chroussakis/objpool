@@ -34,7 +34,7 @@
 from . import ObjectPool, PooledObject
 from select import select
 
-from httplib import (
+from http.client import (
     HTTPConnection as http_class,
     HTTPSConnection as https_class,
     ResponseNotReady, BadStatusLine,
