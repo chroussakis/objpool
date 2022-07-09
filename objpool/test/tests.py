@@ -65,14 +65,7 @@ from objpool import ObjectPool, PoolLimitError, PoolVerificationError
 from objpool.http import PooledHTTPConnection, HTTPConnectionPool
 from objpool.http import _pools as _http_pools
 
-# Use backported unittest functionality if Python < 2.7
-try:
-    import unittest2 as unittest
-except ImportError:
-    if sys.version_info < (2, 7):
-        raise Exception("The unittest2 package is required for Python < 2.7")
-    import unittest
-
+import unittest
 
 from threading import Lock
 
