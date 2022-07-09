@@ -47,8 +47,10 @@ classes in the objpool module.
 # Support running under a gevent-monkey-patched environment
 # if the "monkey" argument is specified in the command line.
 import sys
+
 if "monkey" in sys.argv:
     from gevent import monkey
+
     monkey.patch_all()
     sys.argv.pop(sys.argv.index("monkey"))
 
@@ -93,7 +95,7 @@ class NumbersPool(ObjectPool):
 
     # set this to _pool_create_unsafe to check
     # the thread-safety test
-    #_pool_create = _pool_create_unsafe
+    # _pool_create = _pool_create_unsafe
     _pool_create = _pool_create_safe
 
     def _pool_verify(self, obj):
@@ -133,7 +135,8 @@ class ObjectPoolTestCase(unittest.TestCase):
 
     def test_put_with_factory(self):
         cleaned_objects = []
-        pool = ObjectPool(3,
+        pool = ObjectPool(
+            3,
             create=[2, 1, 0].pop,
             verify=lambda o: o % 2 == 0,
             cleanup=cleaned_objects.append,
@@ -170,14 +173,16 @@ class NumbersPoolTestCase(unittest.TestCase):
 
     def test_parallel_allocate_all(self):
         """Allocate all pool objects in parallel"""
+
         def allocate_one(pool, results, index):
             n = pool.pool_get()
             results[index] = n
 
         results = [None] * self.N
-        threads = [threading.Thread(target=allocate_one,
-                                    args=(self.numbers, results, i))
-                   for i in range(0, self.N)]
+        threads = [
+            threading.Thread(target=allocate_one, args=(self.numbers, results, i))
+            for i in range(0, self.N)
+        ]
 
         for t in threads:
             t.start()
@@ -185,8 +190,7 @@ class NumbersPoolTestCase(unittest.TestCase):
             t.join()
 
         # This nonblocking pool_get() should fail
-        self.assertRaises(PoolLimitError, self.numbers.pool_get,
-                          blocking=False)
+        self.assertRaises(PoolLimitError, self.numbers.pool_get, blocking=False)
         self.assertEqual(sorted(results), list(range(0, self.N)))
 
     def test_allocate_no_create(self):
@@ -195,8 +199,7 @@ class NumbersPoolTestCase(unittest.TestCase):
             self.assertIsNone(self.numbers.pool_get(create=False))
 
         # This nonblocking pool_get() should fail
-        self.assertRaises(PoolLimitError, self.numbers.pool_get,
-                          blocking=False)
+        self.assertRaises(PoolLimitError, self.numbers.pool_get, blocking=False)
 
     def test_pool_cleanup_returns_failure(self):
         """Put a broken object, test a new one is retrieved eventually"""
@@ -212,6 +215,7 @@ class NumbersPoolTestCase(unittest.TestCase):
 
     def test_parallel_get_blocks(self):
         """Test threads block if no object left in the pool"""
+
         def allocate_one_and_sleep(pool, sec, result, index):
             n = pool.pool_get()
             time.sleep(sec)
@@ -220,9 +224,12 @@ class NumbersPoolTestCase(unittest.TestCase):
 
         nr_threads = 2 * self.N + 1
         results = [None] * nr_threads
-        threads = [threading.Thread(target=allocate_one_and_sleep,
-                                    args=(self.numbers, self.SEC, results, i))
-                   for i in range(nr_threads)]
+        threads = [
+            threading.Thread(
+                target=allocate_one_and_sleep, args=(self.numbers, self.SEC, results, i)
+            )
+            for i in range(nr_threads)
+        ]
 
         # This should take 3 * SEC seconds
         start = time.time()
@@ -232,7 +239,7 @@ class NumbersPoolTestCase(unittest.TestCase):
             t.join()
         diff = time.time() - start
         self.assertTrue(diff > 3 * self.SEC)
-        self.assertLess((diff - 3 * self.SEC) / 3 * self.SEC, .5)
+        self.assertLess((diff - 3 * self.SEC) / 3 * self.SEC, 0.5)
 
         freq = defaultdict(int)
         for r in results:
@@ -297,8 +304,9 @@ class ThreadSafetyTestCase(unittest.TestCase):
         pool = self.pool
         N = self.size
         results = [None] * N
-        threads = [threading.Thread(target=create, args=(pool, results, i))
-                   for i in range(N)]
+        threads = [
+            threading.Thread(target=create, args=(pool, results, i)) for i in range(N)
+        ]
         for t in threads:
             t.start()
         for t in threads:
@@ -310,20 +318,20 @@ class ThreadSafetyTestCase(unittest.TestCase):
 
         mults = [(n, c) for n, c in list(freq.items()) if c > 1]
         if mults:
-            #print mults
+            # print mults
             raise AssertionError("_pool_create() is not thread safe")
 
 
 class TestHTTPConnectionTestCase(unittest.TestCase):
     def setUp(self):
-        #netloc = "127.0.0.1:9999"
-        #scheme='http'
-        #self.pool = HTTPConnectionPool(
+        # netloc = "127.0.0.1:9999"
+        # scheme='http'
+        # self.pool = HTTPConnectionPool(
         #                netloc=netloc,
         #                scheme=scheme,
         #                pool_size=1)
-        #key = (scheme, netloc)
-        #_http_pools[key] = pool
+        # key = (scheme, netloc)
+        # _http_pools[key] = pool
 
         _http_pools.clear()
 
@@ -344,8 +352,7 @@ class TestHTTPConnectionTestCase(unittest.TestCase):
         sock.close()
 
     def test_double_release(self):
-        pooled = PooledHTTPConnection(self.netloc, self.scheme,
-                                      pool_key='test_key')
+        pooled = PooledHTTPConnection(self.netloc, self.scheme, pool_key="test_key")
         pooled.acquire()
         pool = pooled._pool
         cached_pool = _http_pools[("test_key", self.scheme, self.netloc)]
@@ -366,13 +373,15 @@ class TestHTTPConnectionTestCase(unittest.TestCase):
         self.assertEqual(poolsize, len(pool._set))
 
     def test_distinct_pools_per_scheme(self):
-        with PooledHTTPConnection("127.0.0.1", "http",
-                                  attach_context=True, pool_key='test2') as conn:
+        with PooledHTTPConnection(
+            "127.0.0.1", "http", attach_context=True, pool_key="test2"
+        ) as conn:
             pool = conn._pool_context._pool
             self.assertTrue(pool is _http_pools[("test2", "http", "127.0.0.1")])
 
-        with PooledHTTPConnection("127.0.0.1", "https",
-                                  attach_context=True, pool_key='test2') as conn2:
+        with PooledHTTPConnection(
+            "127.0.0.1", "https", attach_context=True, pool_key="test2"
+        ) as conn2:
             pool2 = conn2._pool_context._pool
             self.assertTrue(conn is not conn2)
             self.assertNotEqual(pool, pool2)
@@ -397,15 +406,11 @@ class TestHTTPConnectionTestCase(unittest.TestCase):
         pool = pooled._pool
         conn.request("GET", "/")
         serversock, addr = self.sock.accept()
-        message = "HTTP/1.1 200 OK\n" \
-                  "Content-Length: 6\n"\
-                  "\n" \
-                  "HELLO\n" \
-
+        message = "HTTP/1.1 200 OK\n" "Content-Length: 6\n" "\n" "HELLO\n"
         serversock.send(message.encode())
         time.sleep(0.3)
         # We would read this message like this
-        #resp = conn.getresponse()
+        # resp = conn.getresponse()
         # but we won't so the connection is dirty
         pooled.release()
 
@@ -420,8 +425,8 @@ class TestHTTPConnectionTestCase(unittest.TestCase):
             pool = None
             try:
                 with PooledHTTPConnection(
-                        self.netloc, self.scheme,
-                        size=1, attach_context=True) as conn:
+                    self.netloc, self.scheme, size=1, attach_context=True
+                ) as conn:
                     pool = conn._pool_context._pool
                     raise TestError()
             except TestError:
@@ -443,6 +448,7 @@ class ProcessSafetyTestCase(unittest.TestCase):
         if self.exit_at_tear_down:
             from signal import SIGKILL
             from os import getpid, kill
+
             kill(getpid(), SIGKILL)
 
     def test_fork(self):
@@ -456,5 +462,5 @@ class ProcessSafetyTestCase(unittest.TestCase):
             self.pool.pool_get()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

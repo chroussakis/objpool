@@ -37,7 +37,8 @@ from select import select
 from http.client import (
     HTTPConnection as http_class,
     HTTPSConnection as https_class,
-    ResponseNotReady, BadStatusLine,
+    ResponseNotReady,
+    BadStatusLine,
 )
 
 from threading import Lock
@@ -79,6 +80,7 @@ def _patch_connection(conn):
     BadStatusLine exception with empty line ('').
 
     """
+
     def _patch_request(*args, **kwargs):
         """Save request parameters and call actual request function"""
         conn._request_args = args
@@ -96,12 +98,13 @@ def _patch_connection(conn):
             except BadStatusLine as err:
                 if err.line == "''" and i <= tries:
                     # Retry only in case line was empty ('')
-                    log.debug("HTTP-RESPONSE: BadStatusLine exception."
-                              " Retrying (try %d of %d)" % (i, tries))
+                    log.debug(
+                        "HTTP-RESPONSE: BadStatusLine exception."
+                        " Retrying (try %d of %d)" % (i, tries)
+                    )
                     # Close the old connection
                     conn.close()
-                    conn._old_request(*conn._request_args,
-                                      **conn._request_kwargs)
+                    conn._old_request(*conn._request_args, **conn._request_kwargs)
                     continue
                 else:
                     raise
@@ -118,18 +121,22 @@ def _patch_connection(conn):
 class HTTPConnectionPool(ObjectPool):
 
     _scheme_to_class = {
-        'http': http_class,
-        'https': https_class,
+        "http": http_class,
+        "https": https_class,
     }
 
     def __init__(self, scheme, netloc, size=None):
-        log.debug("INIT-POOL: Initializing pool of size %d, scheme: %s, "
-                  "netloc: %s", size, scheme, netloc)
+        log.debug(
+            "INIT-POOL: Initializing pool of size %d, scheme: %s, " "netloc: %s",
+            size,
+            scheme,
+            netloc,
+        )
         ObjectPool.__init__(self, size=size)
 
         connection_class = self._scheme_to_class.get(scheme, None)
         if connection_class is None:
-            m = 'Unsupported scheme: %s' % (scheme,)
+            m = "Unsupported scheme: %s" % (scheme,)
             raise ValueError(m)
 
         self.connection_class = connection_class
@@ -162,7 +169,7 @@ class HTTPConnectionPool(ObjectPool):
 
         # see httplib source for connection states documentation
         conn_state = conn._HTTPConnection__state
-        if (conn._pool_use_counter > 0 and conn_state == "Idle"):
+        if conn._pool_use_counter > 0 and conn_state == "Idle":
             try:
                 conn.getresponse()
             except ResponseNotReady:
@@ -180,25 +187,25 @@ class PooledHTTPConnection(PooledObject):
     _pool_class = HTTPConnectionPool
     _pool_key = __name__
 
-    def __init__(self, netloc, scheme='http', pool=None, pool_key=None, **kw):
-        kw['netloc'] = netloc
-        kw['scheme'] = scheme
-        kw['pool'] = pool
+    def __init__(self, netloc, scheme="http", pool=None, pool_key=None, **kw):
+        kw["netloc"] = netloc
+        kw["scheme"] = scheme
+        kw["pool"] = pool
         if pool_key is not None:
-            kw['pool_key'] = pool_key
+            kw["pool_key"] = pool_key
         super(PooledHTTPConnection, self).__init__(**kw)
 
     def get_pool(self):
         kwargs = self._pool_kwargs
-        pool = kwargs.pop('pool', None)
+        pool = kwargs.pop("pool", None)
         if pool is not None:
             return pool
 
         # pool was not given, find one from the global registry
-        scheme = kwargs['scheme']
-        netloc = kwargs['netloc']
-        size = kwargs.get('size', default_pool_size)
-        pool_key = kwargs.get('pool_key', self._pool_key)
+        scheme = kwargs["scheme"]
+        netloc = kwargs["netloc"]
+        size = kwargs.get("size", default_pool_size)
+        pool_key = kwargs.get("pool_key", self._pool_key)
         # ensure distinct pools for every (scheme, netloc) combination
         key = (pool_key, scheme, netloc)
         with _pools_mutex:

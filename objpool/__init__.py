@@ -50,10 +50,10 @@ from threading import Semaphore, Lock
 from os import getpid
 
 
-__all__ = ['ObjectPool', 'ObjectPoolError',
-           'PoolLimitError', 'PoolVerificationError']
+__all__ = ["ObjectPool", "ObjectPoolError", "PoolLimitError", "PoolVerificationError"]
 
 import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -114,14 +114,16 @@ class ObjectPool(object):
       relies upon will be copied when the new process is being created.
 
     """
+
     def __init__(self, size=None, create=None, verify=None, cleanup=None):
         self._pool_pid = getpid()
         try:
             self.size = int(size)
             assert size >= 1
         except:
-            raise ValueError("Invalid size for pool (positive integer "
-                             "required): %r" % (size,))
+            raise ValueError(
+                "Invalid size for pool (positive integer " "required): %r" % (size,)
+            )
 
         self._create_func = create
         self._verify_func = verify
@@ -133,9 +135,12 @@ class ObjectPool(object):
         log.debug("Initialized pool %r", self)
 
     def __repr__(self):
-        return ("<pool %d: size=%d, len(_set)=%d, semaphore=%d>" %
-                (id(self), self.size, len(self._set),
-                 self._semaphore._value))
+        return "<pool %d: size=%d, len(_set)=%d, semaphore=%d>" % (
+            id(self),
+            self.size,
+            len(self._set),
+            self._semaphore._value,
+        )
 
     def pool_get(self, blocking=True, timeout=None, create=True, verify=True):
         """Get an object from the pool.
@@ -148,8 +153,7 @@ class ObjectPool(object):
 
         """
         if self._pool_pid != getpid():
-            msg = ("You cannot use a pool in a different process "
-                   "than it was created!")
+            msg = "You cannot use a pool in a different process " "than it was created!"
             raise AssertionError(msg)
 
         # timeout argument only supported by gevent and py3k variants
@@ -202,17 +206,14 @@ class ObjectPool(object):
         but no object returned to the pool set
 
         """
-        log.debug("PUT-BEFORE: about to put object %r back to pool %r",
-                  obj, self)
+        log.debug("PUT-BEFORE: about to put object %r back to pool %r", obj, self)
         if obj is not None and not self._pool_cleanup(obj):
             with self._mutex:
                 if obj in self._set:
-                    log.warning("Object %r already in _set of pool %r",
-                                obj, self)
+                    log.warning("Object %r already in _set of pool %r", obj, self)
                 self._set.add(obj)
         self._semaphore.release()
-        log.debug("PUT-AFTER: finished putting object %r back to pool %r",
-                  obj, self)
+        log.debug("PUT-AFTER: finished putting object %r back to pool %r", obj, self)
 
     def pool_create_free(self):
         """Create a free new object that is not put into the pool.
@@ -316,16 +317,14 @@ class PooledObject(object):
     _pool_class = ObjectPool
 
     # default keyword args to pass to pool initialization
-    _pool_default_settings = (
-        ('size', 25),
-    )
+    _pool_default_settings = (("size", 25),)
 
     # keyword args to pass to pool_get
     _pool_default_get_settings = (
-        ('blocking', True),
-        #('timeout', None),
-        ('create', True),
-        ('verify', True),
+        ("blocking", True),
+        # ('timeout', None),
+        ("create", True),
+        ("verify", True),
     )
 
     # behavior settings
@@ -336,9 +335,15 @@ class PooledObject(object):
     ###  Subclass attribute customization ends here.  ###
     #####################################################
 
-    def __init__(self, pool_settings=None, get_settings=None,
-                 attach_context=None, disable_after_release=None,
-                 ignore_double_release=None, **kwargs):
+    def __init__(
+        self,
+        pool_settings=None,
+        get_settings=None,
+        attach_context=None,
+        disable_after_release=None,
+        ignore_double_release=None,
+        **kwargs
+    ):
         """Initialize a PooledObject instance.
 
         Accept only keyword arguments.
@@ -414,10 +419,12 @@ class PooledObject(object):
     ### Maybe overriding get_pool() and __init__() above is enough ###
 
     def __repr__(self):
-        return ("<object %s of class %s: "
-                "proxy for object (%r) in pool (%r)>" % (
-                id(self), self.__class__.__name__,
-                self.obj, self._pool))
+        return "<object %s of class %s: " "proxy for object (%r) in pool (%r)>" % (
+            id(self),
+            self.__class__.__name__,
+            self.obj,
+            self._pool,
+        )
 
     __str__ = __repr__
 
@@ -450,8 +457,7 @@ class PooledObject(object):
         log.debug("%s Acquiring (context: %r)", self._pool_log_prefix, self)
         pool = self._pool
         if pool is False:
-            m = "%r: has been released. No further pool access allowed." % (
-                self,)
+            m = "%r: has been released. No further pool access allowed." % (self,)
             raise AssertionError(m)
         if pool is not None:
             m = "Double acquire in %r" % self
